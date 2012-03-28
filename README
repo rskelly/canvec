@@ -1,0 +1,20 @@
+The Government of Canada provides a nifty dataset called CanVec* which contains all the features you'd find on a standard 
+NTS map in Shapefile format. The data is provided as zip archives, each corresponding to a map sheet in the NTS system.
+
+The trouble arises when you want to extract a specific feature type across several sheets; you have to navigate 
+a deep folder hierarchy, opening, searching and extracting files as you go.
+
+I made this little Python script to make the task easier. It navigates the CanVec directory 
+(in whatever form it exists on your drive), finds the files that match your search criterion and extracts them 
+to a temporary folder. Then it creates an SQL file containing the instructions to create and populate a table in a 
+PostGIS database with the data. This last step requires that shp2pgsql exist on your PATH.
+
+Here's the invocation:
+
+python canvec.py FO_1030009 canvec contours_m output.sql ./canvec ./tmp
+
+This tells canvec.py to find files whose names match the string FO_1030009 (metric contours). It searches for 
+archives in ./canvec and saves temporary files in ./tmp. Then it outputs a file called output.sql 
+which will create and poplate a table called contours_m in the canvec schema.
+
+* http://geogratis.cgdi.gc.ca/geogratis/en/product/search.do?id=5460AA9D-54CD-8349-C95E-1A4D03172FDF
