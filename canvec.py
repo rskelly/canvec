@@ -21,20 +21,26 @@ from zipfile import ZipFile
 import os
 import re
 
-# Canvec extractor takes a directory with canvec Zip archives (at any depth)
-# and unpackes them to a temporary directory. Then, it uses shp2pgsql to assemble
-# an SQL file for a PostGIS table.
-class CanvecExtractor:
 
-	# Performs the extraction.
-	# Params:
-	#	search - A search string to match the name of the file (the file's data is identifiable by its name. For example, metric contours would match 'FO_1030009').
-	#	tableName - The name of the table to create/populate. The table will be dropped!
-	#	schemaName - The schema name of the table.
-	#	sqlFile - A file to write the SQL to.
-	#	canvecDir - The name of the Canvec directory. Required.
-	#	tmpDir - The temporary directory. If the directory does not exist, it will be created.
+class CanvecExtractor:
+	"""
+		Provides a method for extracting CanVec files matching a search string 
+		and creating an PostGIS-compatible SQL file to create and populate a table 
+		containing the data.
+	"""
+
 	def extract(self, search, tableName, schemaName, sqlFile, canvecDir, tmpDir):
+		"""
+			Perform the extraction and create the SQL file.
+			
+			Named Arguments:
+			search -- A search string to match the name of the file (the file's data is identifiable by its name. For example, metric contours would match 'FO_1030009').
+			tableName -- The name of the table to create/populate. The table will be dropped!
+			schemaName -- The schema name of the table.
+			sqlFile -- A file to write the SQL to.
+			canvecDir -- The name of the Canvec directory. Required.
+			tmpDir -- The temporary directory. If the directory does not exist, it will be created.
+		"""
 		# Check parameters
 		if sqlFile is None:
 			raise "No SQL file."
@@ -49,11 +55,11 @@ class CanvecExtractor:
 		if tmpDir is None:
 			raise "No temp dir."
 		# Check if the cenvec dir exists.
-		if not self.dirExists(canvecDir):
+		if not self._dirExists(canvecDir):
 			raise "The canvec dire (%s) doesn't seem to exist." % canvecDir
 		# Create the tmp dir if it doesn't exist.
-		if not self.dirExists(tmpDir):
-			self.createDir(tmpDir)
+		if not self._dirExists(tmpDir):
+			self._createDir(tmpDir)
 		self.searchRe = re.compile(search)
 		self.schemaName = schemaName
 		self.tableName = tableName
@@ -61,22 +67,22 @@ class CanvecExtractor:
 		self.tmpDir = tmpDir
 		self.sqlFile = sqlFile
 		# Start!
-		archives = self.getArchives()
-		shapefiles = self.extractShapefiles(archives)
-		self.createSql(shapefiles)
+		archives = self._getArchives()
+		shapefiles = self._extractShapefiles(archives)
+		self._createSql(shapefiles)
 
 	# Returns true if a directory exists. False otherwise.
-	def dirExists(self, dir):
+	def _dirExists(self, dir):
 		# Check and create the tmpdir
 		return os.access(dir, os.R_OK|os.W_OK)
 		
 	# Create a directory.
-	def createDir(self, dir):
+	def _createDir(self, dir):
 		os.makedirs(dir)
 
 	# Extracts the shapefiles matching the given re from the archives stored in the file list.
 	# Returns a list of the shapefiles (shp) in the archive.
-	def extractShapefiles(self, fileList):
+	def _extractShapefiles(self, fileList):
 		shpfiles = list()
 		shpmatch = re.compile('\.shp$')
 		# Iterate through the list of archives.
@@ -104,7 +110,7 @@ class CanvecExtractor:
 	
 	# Prints the SQL containing the DDL and data from all the shape files in the given list.
 	# This could be huge.
-	def createSql(self, shapefiles):
+	def _createSql(self, shapefiles):
 		# A command to create/populate the table, on the first file.
 		cmdA = "shp2pgsql -s 4326 -d -I %s/%s %s.%s > %s"
 		# A command to append data to an existing table.
@@ -122,7 +128,7 @@ class CanvecExtractor:
 			
 	# Returns a list of all the zip archives under the given directory.
 	# Search is recursive. If no archive is found, the empty list is returned.
-	def getArchives(self):
+	def _getArchives(self):
 		fileList = list()
 		# A regex for finding the zip files.
 		match = re.compile('\.zip$')
