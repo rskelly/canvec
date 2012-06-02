@@ -71,18 +71,19 @@ class CanvecExtractor:
 		shapefiles = self._extractShapefiles(archives)
 		self._createSql(shapefiles)
 
-	# Returns true if a directory exists. False otherwise.
 	def _dirExists(self, dir):
-		# Check and create the tmpdir
+		"""Returns true if a directory exists. False otherwise."""
 		return os.access(dir, os.R_OK|os.W_OK)
 		
-	# Create a directory.
 	def _createDir(self, dir):
+		"""Create a directory."""
 		os.makedirs(dir)
 
-	# Extracts the shapefiles matching the given re from the archives stored in the file list.
-	# Returns a list of the shapefiles (shp) in the archive.
 	def _extractShapefiles(self, fileList):
+		"""
+			Extracts the shapefiles matching the given re from the archives stored in the file list.
+			Returns a list of the shapefiles (shp) in the archive.
+		"""
 		shpfiles = list()
 		shpmatch = re.compile('\.shp$')
 		# Iterate through the list of archives.
@@ -108,9 +109,11 @@ class CanvecExtractor:
 					pass
 		return shpfiles
 	
-	# Prints the SQL containing the DDL and data from all the shape files in the given list.
-	# This could be huge.
 	def _createSql(self, shapefiles):
+		"""
+			Prints the SQL containing the DDL and data from all the shape files in the given list.
+			This could be huge.
+		"""
 		# A command to create/populate the table, on the first file.
 		cmdA = "shp2pgsql -s 4326 -d -I {0}/{1} {2}.{3} > {4}"
 		# A command to append data to an existing table.
@@ -126,9 +129,11 @@ class CanvecExtractor:
 			cmd = cmd.format(self.tmpDir, shapefiles[i], self.schemaName, self.tableName, self.sqlFile)
 			os.system(cmd)
 			
-	# Returns a list of all the zip archives under the given directory.
-	# Search is recursive. If no archive is found, the empty list is returned.
 	def _getArchives(self):
+		"""
+			Returns a list of all the zip archives under the given directory.
+			Search is recursive. If no archive is found, the empty list is returned.
+		"""
 		fileList = list()
 		# A regex for finding the zip files.
 		match = re.compile('\.zip$')
@@ -145,7 +150,6 @@ class CanvecExtractor:
 					fileList.append("{0}/{1}".format(dirpath, l))
 		return fileList
 		
-# If run from the command line, pretend to be a program.
 if __name__ == "__main__":
 	import sys
 	args = sys.argv[1:]
