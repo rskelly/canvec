@@ -21,25 +21,27 @@ from zipfile import ZipFile
 import os
 import re
 
-
 class CanvecExtractor:
 	"""
 		Provides a method for extracting CanVec files matching a search string 
 		and creating an PostGIS-compatible SQL file to create and populate a table 
 		containing the data.
 	"""
-
+	def __init__(self):
+		# The maximum size an sql file is allowed to reach before it gets rotated.
+		self.maxSqlSize = 500 * 1024 * 1024
+		
 	def extract(self, search, tableName, schemaName, sqlFile, canvecDir, tmpDir):
 		"""
 			Perform the extraction and create the SQL file.
 			
-			Named Arguments:
-			search -- A search string to match the name of the file (the file's data is identifiable by its name. For example, metric contours would match 'FO_1030009').
-			tableName -- The name of the table to create/populate. The table will be dropped!
-			schemaName -- The schema name of the table.
-			sqlFile -- A file to write the SQL to.
-			canvecDir -- The name of the Canvec directory. Required.
-			tmpDir -- The temporary directory. If the directory does not exist, it will be created.
+			Arguments:
+				search     -- A search string to match the name of the file (the file's data is identifiable by its name. For example, metric contours would match 'FO_1030009').
+				tableName  -- The name of the table to create/populate. The table will be dropped!
+				schemaName -- The schema name of the table.
+				sqlFile    -- A file to write the SQL to.
+				canvecDir  -- The name of the Canvec directory. Required.
+				tmpDir     -- The temporary directory. If the directory does not exist, it will be created.
 		"""
 		# Check parameters
 		if sqlFile is None:
@@ -122,26 +124,56 @@ class CanvecExtractor:
 				os.remove("{0}/{1}".format(self.tmpDir, f))
 			except:
 				pass
-			
+		try:
+			os.rmdir(self.tmpDir)
+		except:
+			pass
+		
+	@property
+	def maxSqlSize(self):
+		"""The maximum size (bytes) of generated sql files. If a file's
+		size exceeds this value, it will be rotated."""
+		return self._maxSqlSize
+		
+	@maxSqlSize.setter
+	def maxSqlSize(self, value):
+		minsize = 50 * 1024 * 1024
+		try:
+			value = int(value)
+			if value < minsize:
+				value = minsize
+			self._maxSqlSize = minsize
+		except:
+			self._maxSqlSize = minsize
+
 	def _createSql(self, shapefiles):
 		"""
 			Prints the SQL containing the DDL and data from all the shape files in the given list.
 			This could be huge.
 		"""
-		# A command to create/populate the table, on the first file.
-		cmdA = "shp2pgsql -s 4326 -d -I {0}/{1} {2}.{3} > {4}"
-		# A command to append data to an existing table.
-		cmdB = "shp2pgsql -s 4326 -a {0}/{1} {2}.{3} >> {4}"
-		cmd = ''
-		# Iterate over the list of shapefiles, calling shp2pgsql on each one.
-		# This outputs the sql.
+		cmd = "shp2pgsql -s 4326 {6} -I {0}/{1} {2}.{3} {5} {4}"
+		# Split the filename so we can insert a file number. If there's no extension, we're going to add one.
+		sqlName  = self.sqlFile
+		sqlExt = 'sql'
+		if sqlName.rfind('.') > -1:
+			sqlName, sqlExt = sqlName.rsplit('.')
+		fileNum = 1
+		# If true, use the append operator, otherwise clobber
+		append = False
+		# If true, use the drop/create switch, otherwise append.
+		create = True
+		maxSqlSize = self.maxSqlSize
+		# Iterate over the list of shapefiles, calling shp2pgsql on each one. This outputs the sql.
 		for i in range(0, len(shapefiles)):
-			if i > 0:
-				cmd = cmdB
+			sqlFile = "{0}.{1}.{2}".format(sqlName, fileNum, sqlExt)
+			os.system(cmd.format(self.tmpDir, shapefiles[i], self.schemaName, self.tableName, sqlFile, '>>' if append else '>', '-d' if create else '-a'))
+			# If the sql file is too large, rotate it.
+			if os.path.getsize(sqlFile) > maxSqlSize:
+				fileNum = fileNum + 1
+				append = False
 			else:
-				cmd = cmdA
-			cmd = cmd.format(self.tmpDir, shapefiles[i], self.schemaName, self.tableName, self.sqlFile)
-			os.system(cmd)
+				append = True
+			create = False
 			
 	def _getArchives(self):
 		"""
