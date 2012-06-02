@@ -65,12 +65,14 @@ class CanvecExtractor:
 		self.tableName = tableName
 		self.canvecDir = canvecDir
 		self.tmpDir = tmpDir
+		self.tmpFiles = []
 		self.sqlFile = sqlFile
 		# Start!
 		archives = self._getArchives()
 		shapefiles = self._extractShapefiles(archives)
 		self._createSql(shapefiles)
-
+		self._deleteTmpFiles()
+		
 	def _dirExists(self, dir):
 		"""Returns true if a directory exists. False otherwise."""
 		return os.access(dir, os.R_OK|os.W_OK)
@@ -97,6 +99,8 @@ class CanvecExtractor:
 				for e in entries:
 					if self.searchRe.search(e):
 						z.extract(e, self.tmpDir)
+						# Add to the list of extracted files.
+						self.tmpFiles.append(e)
 						# If the entry is a shapefile, add it to the shp list.
 						if shpmatch.search(e):
 							shpfiles.append(e)
@@ -109,6 +113,16 @@ class CanvecExtractor:
 					pass
 		return shpfiles
 	
+	def _deleteTmpFiles(self):
+		"""
+			Deletes the temporary files extracted from the archives.
+		"""
+		for f in self.tmpFiles:
+			try:
+				os.remove("{0}/{1}".format(self.tmpDir, f))
+			except:
+				pass
+			
 	def _createSql(self, shapefiles):
 		"""
 			Prints the SQL containing the DDL and data from all the shape files in the given list.
@@ -149,6 +163,7 @@ class CanvecExtractor:
 				if match.search(l):
 					fileList.append("{0}/{1}".format(dirpath, l))
 		return fileList
+		
 		
 if __name__ == "__main__":
 	import sys
