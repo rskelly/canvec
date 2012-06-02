@@ -43,20 +43,20 @@ class CanvecExtractor:
 		"""
 		# Check parameters
 		if sqlFile is None:
-			raise "No SQL file."
+			raise Exception("No SQL file.")
 		if search is None:
-			raise "No search string."
+			raise Exception("No search string.")
 		if schemaName is None:
-			raise "No schema name."
+			raise Exception("No schema name.")
 		if tableName is None:
-			raise "No table name."
+			raise Exception("No table name.")
 		if canvecDir is None:
-			raise "No canvec dir."
+			raise Exception("No canvec dir.")
 		if tmpDir is None:
-			raise "No temp dir."
+			raise Exception("No temp dir.")
 		# Check if the cenvec dir exists.
 		if not self._dirExists(canvecDir):
-			raise "The canvec dire (%s) doesn't seem to exist." % canvecDir
+			raise Exception("The canvec dir ({0}) doesn't seem to exist.".format(canvecDir))
 		# Create the tmp dir if it doesn't exist.
 		if not self._dirExists(tmpDir):
 			self._createDir(tmpDir)
@@ -100,7 +100,7 @@ class CanvecExtractor:
 						if shpmatch.search(e):
 							shpfiles.append(e)
 			except:
-				print "Failed to open %s." % f
+				print "Failed to open {0}.".format(f)
 			finally:
 				try:
 					z.close()
@@ -112,9 +112,9 @@ class CanvecExtractor:
 	# This could be huge.
 	def _createSql(self, shapefiles):
 		# A command to create/populate the table, on the first file.
-		cmdA = "shp2pgsql -s 4326 -d -I %s/%s %s.%s > %s"
+		cmdA = "shp2pgsql -s 4326 -d -I {0}/{1} {2}.{3} > {4}"
 		# A command to append data to an existing table.
-		cmdB = "shp2pgsql -s 4326 -a %s/%s %s.%s >> %s"
+		cmdB = "shp2pgsql -s 4326 -a {0}/{1} {2}.{3} >> {4}"
 		cmd = ''
 		# Iterate over the list of shapefiles, calling shp2pgsql on each one.
 		# This outputs the sql.
@@ -123,7 +123,7 @@ class CanvecExtractor:
 				cmd = cmdB
 			else:
 				cmd = cmdA
-			cmd = cmd % (self.tmpDir, shapefiles[i], self.schemaName, self.tableName, self.sqlFile)
+			cmd = cmd.format(self.tmpDir, shapefiles[i], self.schemaName, self.tableName, self.sqlFile)
 			os.system(cmd)
 			
 	# Returns a list of all the zip archives under the given directory.
@@ -142,7 +142,7 @@ class CanvecExtractor:
 			dirpath = f[0]
 			for l in f[2]:
 				if match.search(l):
-					fileList.append("%s/%s" % (dirpath, l))
+					fileList.append("{0}/{1}".format(dirpath, l))
 		return fileList
 		
 # If run from the command line, pretend to be a program.
