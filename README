@@ -11,10 +11,10 @@ PostGIS database with the data. This last step requires that shp2pgsql exist on 
 
 Here's the invocation:
 
-python canvec.py FO_1030009 canvec contours_m output.sql ./canvec ./tmp
+python canvec.py FO_1030009 output.sql ./canvec contours_m canvec
 
 This tells canvec.py to find files whose names match the string FO_1030009 (metric contours). It searches for 
-archives in ./canvec and saves temporary files in ./tmp. Then it outputs a file called output.sql 
-which will create and poplate a table called contours_m in the canvec schema.
+archives in ./canvec and saves temporary files by default in /tmp. Then it outputs a file called output.sql 
+which will create and poplate a table called contours_m in the canvec schema (defaults to public).
 
 * http://geogratis.cgdi.gc.ca/geogratis/en/product/search.do?id=5460AA9D-54CD-8349-C95E-1A4D03172FDF
