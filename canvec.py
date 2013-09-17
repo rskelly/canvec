@@ -309,7 +309,7 @@ class CanvecExtractor(Base):
 			# Call the command to output the file.
 			os.system(cmd.format(shapefile, self.schemaName, self.tableName, sqlFile, '>>' if append else '>', '-d' if create else '-a', '-I' if end else ''))
 			# If the sql file is too large, rotate it.
-			if os.path.getsize(outFile) > maxSqlSize:
+			if os.path.getsize(sqlFile) > maxSqlSize:
 				h.close()
 				fileNum = fileNum + 1
 				append = False
